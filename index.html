@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AWS IoT Core — Simulateur interactif | Prof. Azeddine Khiat</title>
+<style>
+:root{
+  /* Identité visuelle Prof. Azeddine Khiat */
+  --navy:#1F3864;        /* couleur principale */
+  --navy-light:#2c4f8f;
+  --teal:#0D7377;        /* objets / réseau */
+  --teal-light:#14a3a8;
+  --amber:#B8860B;       /* sécurité / accents */
+  --amber-light:#e0a82e;
+  --bg:#eef2f8;
+  --card:#ffffff;
+  --ink:#1b2540;
+  --muted:#5b6b86;
+  --line:#d8e0ee;
+  --ok:#1f7a4d;
+  --ok-bg:#e3f6ec;
+  --bad:#b3261e;
+  --bad-bg:#fdeceb;
+  --code-bg:#0c1730;
+  --shadow:0 10px 30px rgba(31,56,100,.12);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:Calibri,"Segoe UI",system-ui,Arial,sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.55;
+}
+code,pre,.mono{font-family:Consolas,"Courier New",monospace}
+
+/* ---------- En-tête ---------- */
+header.top{
+  background:linear-gradient(135deg,var(--navy) 0%,#16294a 60%,var(--teal) 140%);
+  color:#fff;padding:30px 22px 26px;position:relative;overflow:hidden;
+}
+header.top::after{
+  content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;
+  background:radial-gradient(circle,rgba(184,134,11,.35),transparent 70%);
+}
+.brand{display:flex;align-items:center;gap:14px;max-width:1200px;margin:0 auto 14px}
+.brand .logo{
+  width:54px;height:54px;border-radius:14px;flex:0 0 auto;
+  background:linear-gradient(135deg,var(--amber),var(--amber-light));
+  display:grid;place-items:center;font-size:28px;box-shadow:0 6px 18px rgba(0,0,0,.3);
+}
+.brand .who{font-size:14px;letter-spacing:.5px;opacity:.92}
+.brand .who b{display:block;font-size:17px;letter-spacing:.3px}
+header.top h1{max-width:1200px;margin:6px auto 8px;font-size:30px;line-height:1.2;position:relative}
+header.top p.lead{max-width:1000px;margin:0 auto;font-size:17px;opacity:.95;position:relative}
+.eyebrow{display:inline-block;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);
+  padding:5px 12px;border-radius:999px;font-size:12.5px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+
+/* ---------- Navigation ---------- */
+nav{
+  position:sticky;top:0;z-index:50;background:var(--navy);
+  display:flex;gap:6px;padding:9px 12px;overflow-x:auto;
+  box-shadow:0 4px 16px rgba(0,0,0,.18);
+}
+nav::-webkit-scrollbar{height:6px}
+nav::-webkit-scrollbar-thumb{background:#ffffff55;border-radius:99px}
+nav button{
+  border:0;border-radius:999px;padding:9px 15px;background:#ffffff1a;color:#dce6f7;
+  cursor:pointer;font-weight:700;font-size:14px;white-space:nowrap;transition:.2s;
+}
+nav button .n{opacity:.6;margin-right:6px;font-variant-numeric:tabular-nums}
+nav button.active,nav button:hover{background:var(--amber);color:#1b1300}
+
+/* ---------- Conteneur ---------- */
+.wrap{max-width:1200px;margin:auto;padding:26px 20px 40px}
+.section{display:none;animation:fade .4s ease}
+.section.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.section-head{margin:0 0 18px}
+.section-head .kicker{color:var(--teal);font-weight:800;letter-spacing:2px;text-transform:uppercase;font-size:13px}
+.section-head h2{margin:4px 0 0;font-size:26px;color:var(--navy)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.grid.two{grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 8px;color:var(--navy);font-size:19px}
+.card h2{margin:0 0 12px;color:var(--navy)}
+.muted{color:var(--muted)}
+.center{text-align:center}
+.big-icon{font-size:42px;line-height:1}
+
+.pill{display:inline-block;background:#e7eefb;color:var(--navy);padding:6px 12px;border-radius:999px;
+  font-weight:700;margin:3px;font-size:13.5px;border:1px solid #d3def6;cursor:default}
+.pill.teal{background:#dff3f3;color:#0a5a5d;border-color:#bfe6e6}
+.pill.amber{background:#fbf0d6;color:#7a590a;border-color:#f0dca5}
+
+/* ---------- Boutons ---------- */
+.btn{background:var(--navy);color:#fff;border:0;border-radius:11px;padding:11px 16px;
+  cursor:pointer;font-weight:700;margin:4px;font-size:14.5px;transition:.18s}
+.btn:hover{filter:brightness(1.12)}
+.btn.teal{background:var(--teal)}
+.btn.amber{background:var(--amber)}
+.btn.ok{background:var(--ok)}
+.btn.bad{background:var(--bad)}
+.btn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--navy)}
+
+/* ---------- Cartes-concept interactives (3 niveaux) ---------- */
+.concept{position:relative;cursor:pointer;transition:.2s;border-top:4px solid var(--teal)}
+.concept:hover{transform:translateY(-3px);box-shadow:0 16px 36px rgba(31,56,100,.18)}
+.concept .tap-hint{position:absolute;top:14px;right:16px;font-size:12px;color:var(--muted);
+  background:#f1f5fc;border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+.concept .layers{margin-top:12px;display:none}
+.concept.open .layers{display:block;animation:fade .3s}
+.layer{border-left:3px solid var(--line);padding:6px 0 6px 12px;margin:10px 0}
+.layer .tag{display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+  padding:2px 8px;border-radius:6px;margin-bottom:4px}
+.layer.def .tag{background:#e7eefb;color:var(--navy)}
+.layer.desc .tag{background:#dff3f3;color:#0a5a5d}
+.layer.exp .tag{background:#fbf0d6;color:#7a590a}
+.layer.exm .tag{background:var(--ok-bg);color:var(--ok)}
+.layer.exm{border-left-color:var(--ok)}
+.layer.exm p{font-family:Consolas,monospace;font-size:13px;background:#f3faf5;padding:8px 10px;border-radius:8px;color:#0d4d2c}
+.layer.def{border-left-color:var(--navy)}
+.layer.desc{border-left-color:var(--teal)}
+.layer.exp{border-left-color:var(--amber)}
+.layer p{margin:3px 0 0}
+.chevron{display:inline-block;transition:.25s;color:var(--teal);font-weight:900}
+.concept.open .chevron{transform:rotate(90deg)}
+
+/* ---------- Tableau ---------- */
+.table{width:100%;border-collapse:collapse;margin-top:6px}
+.table td,.table th{border:1px solid var(--line);padding:11px;text-align:left;vertical-align:top}
+.table th{background:var(--navy);color:#fff;font-weight:700}
+.table tr:nth-child(even) td{background:#f6f9fe}
+.yes{color:var(--ok);font-weight:800}
+.no{color:var(--bad);font-weight:800}
+
+/* ---------- Diagramme / flux ---------- */
+.diagram{background:#f7f9fe;border:2px dashed #c3d0e8;border-radius:16px;padding:20px;position:relative;overflow:hidden}
+.flow{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.node{background:#fff;border:2px solid var(--navy);border-radius:14px;padding:14px 16px;text-align:center;
+  font-weight:800;box-shadow:0 6px 16px rgba(31,56,100,.12);min-width:130px;cursor:pointer;transition:.2s;position:relative;z-index:2}
+.node:hover{transform:scale(1.04)}
+.node .mini{font-weight:600;font-size:12.5px;color:var(--muted);display:block;margin-top:3px}
+.node.device{background:#e9f6f6;border-color:var(--teal)}
+.node.sec{background:#fbf0d6;border-color:var(--amber)}
+.node.cloud{background:#e7eefb;border-color:var(--navy)}
+.node.ok{background:var(--ok-bg);border-color:var(--ok)}
+.node.danger{background:var(--bad-bg);border-color:var(--bad)}
+.node.sel{box-shadow:0 0 0 4px rgba(184,134,11,.35)}
+.arrow{font-size:30px;color:var(--navy);font-weight:bold}
+
+.packet{position:absolute;top:50%;left:6%;transform:translateY(-50%);
+  background:var(--amber);color:#1b1300;border:2px solid #8a6608;border-radius:10px;
+  padding:6px 10px;font-weight:800;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.25);
+  opacity:0;z-index:1;white-space:nowrap}
+.packet.run{animation:travel 3s ease-in-out forwards}
+@keyframes travel{
+  0%{left:6%;opacity:0}10%{opacity:1}
+  33%{left:34%}66%{left:62%}
+  90%{left:84%;opacity:1}100%{left:88%;opacity:0}
+}
+
+/* Panneau d'explication dynamique */
+.explain-panel{margin-top:16px;background:#fff;border:1px solid var(--line);border-left:5px solid var(--amber);
+  border-radius:12px;padding:16px;min-height:70px}
+.explain-panel .pt{font-weight:800;color:var(--navy);margin:0 0 4px}
+
+/* ---------- Console / log ---------- */
+.log{background:var(--code-bg);color:#a9f5cf;border-radius:14px;padding:15px;height:220px;overflow:auto;
+  font-family:Consolas,monospace;font-size:13.5px;line-height:1.6}
+.log .err{color:#ff9b94}
+.log .warn{color:#ffd27a}
+.log .ok{color:#9fffc9}
+.log .sys{color:#8fb4ff}
+input.field{width:100%;padding:11px;border-radius:10px;border:1.5px solid var(--line);font-size:14.5px;font-family:inherit}
+label.lbl{font-weight:700;color:var(--navy);font-size:14px;display:block;margin-bottom:5px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:780px){.split{grid-template-columns:1fr}header.top h1{font-size:23px}}
+
+/* topic tree / json */
+.codeblock{font-family:Consolas,monospace;background:var(--code-bg);color:#cfe0ff;padding:16px;border-radius:12px;
+  line-height:1.7;font-size:14px;white-space:pre;overflow:auto}
+.codeblock .k{color:#7ec8ff}.codeblock .s{color:#a9f5cf}.codeblock .c{color:#7f8db0}
+
+/* ---------- Glossaire ---------- */
+.gloss-terms{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.gloss-terms button{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;
+  cursor:pointer;font-weight:700;color:var(--navy);transition:.18s;font-size:14px}
+.gloss-terms button:hover{border-color:var(--teal);color:var(--teal)}
+.gloss-terms button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+#glossBody{background:#f7f9fe;border:1px solid var(--line);border-radius:12px;padding:18px;min-height:120px}
+#glossBody .gt{font-size:21px;color:var(--navy);margin:0 0 8px}
+
+/* ---------- Lab étapes ---------- */
+.progress{height:13px;background:#dde6f4;border-radius:999px;overflow:hidden}
+.bar{height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--amber));transition:.4s}
+.step{display:none}
+.step.active{display:block;animation:fade .3s}
+.step .num{display:inline-grid;place-items:center;width:42px;height:42px;border-radius:12px;
+  background:var(--navy);color:#fff;font-weight:900;font-size:18px;margin-bottom:8px}
+.badge{background:#fbf0d6;color:#7a590a;border:1px solid #f0dca5;border-radius:8px;padding:4px 9px;font-size:13px;font-weight:700}
+.cmd{background:var(--code-bg);color:#a9f5cf;font-family:Consolas,monospace;padding:11px 13px;border-radius:9px;margin:10px 0;font-size:13.5px}
+
+/* ---------- Quiz ---------- */
+.quiz-option{display:block;width:100%;text-align:left;margin:8px 0;padding:13px 14px;border:1.5px solid var(--line);
+  border-radius:11px;background:#fff;cursor:pointer;font-size:15px;transition:.15s;font-family:inherit}
+.quiz-option:hover{border-color:var(--teal)}
+.quiz-option.correct{background:var(--ok-bg);border-color:var(--ok);font-weight:700}
+.quiz-option.wrong{background:var(--bad-bg);border-color:var(--bad)}
+.quiz-feedback{margin-top:10px;padding:11px;border-radius:10px;font-size:14.5px;display:none}
+.quiz-feedback.show{display:block}
+.quiz-feedback.good{background:var(--ok-bg);color:#0d4d2c}
+.quiz-feedback.no{background:var(--bad-bg);color:#7a1812}
+
+.footer{padding:26px;text-align:center;color:var(--muted);font-size:14px;border-top:1px solid var(--line);margin-top:20px}
+.footer b{color:var(--navy)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="logo">☁️</div>
+    <div class="who"><b>Prof. Azeddine KHIAT</b>Plateforme pédagogique interactive · Sécurité des systèmes embarqués</div>
+  </div>
+  <div style="max-width:1200px;margin:auto">
+    <span class="eyebrow">Atelier guidé</span>
+  </div>
+  <h1>AWS IoT Core — Connecter, sécuriser et communiquer avec un objet connecté</h1>
+  <p class="lead">Cliquez sur chaque concept, nœud ou terme : la plateforme explique tout en trois niveaux —
+  <b>définition</b>, <b>description</b> et <b>explication détaillée</b> — puis vous laisse simuler MQTT, TLS et les certificats X.509.</p>
+</header>
+
+<nav id="nav"></nav>
+
+<div class="wrap">
+
+<!-- ============ INTRO ============ -->
+<section class="section active" id="intro">
+  <div class="section-head"><div class="kicker">Démarrage</div><h2>Objectif &amp; architecture</h2></div>
+  <div class="grid two">
+    <div class="card">
+      <h3>🎯 Objectif pédagogique</h3>
+      <p>Comprendre comment un objet connecté communique avec <b>AWS IoT Core</b> de manière sécurisée.</p>
+      <div>
+        <span class="pill">Thing</span><span class="pill teal">MQTT</span>
+        <span class="pill amber">TLS</span><span class="pill amber">X.509</span><span class="pill teal">Python</span>
+      </div>
+      <p class="muted" style="margin-top:10px;font-size:14px">💡 Astuce : chaque mot-clé ci-dessus est expliqué dans l'onglet <b>Glossaire</b>.</p>
+    </div>
+    <div class="card">
+      <h3>🎓 Compétences visées</h3>
+      <p>À la fin du laboratoire, l'étudiant sait :</p>
+      <ul style="margin:6px 0 0;padding-left:20px">
+        <li>créer un <b>Thing</b> dans AWS IoT Core,</li>
+        <li>générer des <b>certificats X.509</b> et une clé privée,</li>
+        <li>tester une connexion <b>TLS</b> sécurisée,</li>
+        <li>publier et recevoir des messages <b>MQTT</b> avec <b>Python</b>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2>Vue globale de l'architecture <span class="muted" style="font-size:15px;font-weight:600">— cliquez sur un nœud</span></h2>
+    <div class="diagram">
+      <div class="flow">
+        <div class="node device" onclick="explainNode('pi',this)">🍓 Raspberry Pi<span class="mini">capteur_simple.py</span></div>
+        <div class="arrow">→</div>
+        <div class="node sec" onclick="explainNode('tls',this)">🔐 TLS + X.509<span class="mini">certificat + clé privée</span></div>
+        <div class="arrow">→</div>
+        <div class="node cloud" onclick="explainNode('core',this)">☁️ AWS IoT Core<span class="mini">Broker MQTT</span></div>
+        <div class="arrow">→</div>
+        <div class="node ok" onclick="explainNode('dash',this)">📱 Dashboard<span class="mini">Subscriber</span></div>
+      </div>
+      <div class="packet" id="pkt">📦 {"temperature":25.6}</div>
+    </div>
+    <div style="margin-top:12px">
+      <button class="btn amber" onclick="animatePacket()">▶ Animer le trajet d'un message</button>
+    </div>
+    <div class="explain-panel" id="archPanel">
+      <p class="pt">Cliquez sur un nœud du schéma…</p>
+      <p class="muted">Chaque élément vous donnera sa définition, son rôle et une explication détaillée.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONCEPTS ============ -->
+<section class="section" id="concepts">
+  <div class="section-head"><div class="kicker">Fondamentaux</div><h2>Concepts IoT — cliquez pour déplier</h2></div>
+  <p class="muted" style="margin-top:-8px">Chaque carte se déplie en trois niveaux : <b>définition</b>, <b>description</b>, <b>explication détaillée</b>.</p>
+  <div class="grid" id="conceptGrid"></div>
+
+  <h3 style="color:var(--navy);margin:26px 0 4px;font-size:21px">Vocabulaire clé — cliquez pour déplier</h3>
+  <p class="muted" style="margin:0 0 12px">Les 12 termes essentiels du laboratoire, expliqués chacun en <b>définition</b>, <b>description</b> et <b>explication détaillée</b>.</p>
+  <div class="grid" id="termGrid"></div>
+
+  <div class="card" style="margin-top:18px">
+    <h2>Comparaison : système embarqué vs objet connecté</h2>
+    <table class="table">
+      <tr><th>Élément</th><th>Système embarqué</th><th>Objet connecté</th></tr>
+      <tr><td>Connexion Internet</td><td class="no">Pas obligatoire</td><td class="yes">Oui</td></tr>
+      <tr><td>Exemple</td><td>Machine à laver classique</td><td>Capteur qui envoie la température vers AWS</td></tr>
+      <tr><td>Communication Cloud</td><td class="no">Non</td><td class="yes">Oui</td></tr>
+      <tr><td>Identité dans le Cloud</td><td class="no">Aucune</td><td class="yes">Un « Thing » + certificat X.509</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============ AWS IoT CORE ============ -->
+<section class="section" id="aws">
+  <div class="section-head"><div class="kicker">Le service central</div><h2>Rôle d'AWS IoT Core</h2></div>
+  <div class="card">
+    <div class="diagram flow">
+      <div class="node device">Objets IoT<span class="mini">Raspberry / ESP32</span></div>
+      <div class="arrow">→</div>
+      <div class="node cloud">AWS IoT Core<span class="mini">Broker + sécurité</span></div>
+      <div class="arrow">→</div>
+      <div class="node ok">Services AWS<span class="mini">Lambda / S3 / DynamoDB</span></div>
+    </div>
+    <p class="muted" style="margin-top:12px">AWS IoT Core est le <b>chef d'orchestre</b> : il relie les objets au reste du Cloud. Cliquez sur ses 4 missions.</p>
+  </div>
+  <div class="grid" id="roleGrid" style="margin-top:18px"></div>
+</section>
+
+<!-- ============ MQTT ============ -->
+<section class="section" id="mqtt">
+  <div class="section-head"><div class="kicker">Le protocole de l'IoT</div><h2>Simulateur MQTT Publish / Subscribe</h2></div>
+  <div class="card">
+    <p>MQTT fonctionne par <b>topics</b>. Le message n'arrive au Subscriber que s'il écoute <b>exactement</b> le même topic
+    (ou un topic compatible avec un caractère générique <code>#</code> / <code>+</code>). Testez par vous-même :</p>
+    <div class="split">
+      <div>
+        <label class="lbl">Topic du Publisher (l'objet qui envoie)</label>
+        <input id="pubTopic" class="field" value="capteurs/salon/temperature">
+        <br><br>
+        <label class="lbl">Message (payload JSON)</label>
+        <input id="payload" class="field" value='{"temperature":25.6}'>
+        <br><br>
+        <button class="btn teal" onclick="publishMsg()">📤 Publier le message</button>
+        <button class="btn amber" onclick="wrongTopic()">⚠️ Simuler une faute de topic</button>
+      </div>
+      <div>
+        <label class="lbl">Topic du Subscriber (qui écoute)</label>
+        <input id="subTopic" class="field" value="capteurs/salon/temperature">
+        <br><br>
+        <div class="log" id="mqttLog"><span class="sys">[MQTT] En attente d'une publication…</span></div>
+      </div>
+    </div>
+    <div class="diagram" style="margin-top:16px">
+      <div class="flow">
+        <div class="node device">Publisher<span class="mini">Capteur</span></div><div class="arrow">→</div>
+        <div class="node cloud">Broker MQTT<span class="mini">AWS IoT Core</span></div><div class="arrow">→</div>
+        <div class="node ok">Subscriber<span class="mini">Dashboard</span></div>
+      </div>
+      <div class="packet" id="pktMqtt">📨 message</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2>Hiérarchie de topics (exemple maison connectée)</h2>
+    <p class="muted">Les topics s'organisent en arborescence séparée par des <code>/</code>.</p>
+    <div class="codeblock">maison/
+├── salon/
+│   ├── temperature   <span class="c"># capteurs/salon/temperature</span>
+│   └── lumiere
+├── cuisine/
+│   ├── temperature
+│   └── humidite
+└── garage/
+    └── porte</div>
+  </div>
+</section>
+
+<!-- ============ SÉCURITÉ ============ -->
+<section class="section" id="securite">
+  <div class="section-head"><div class="kicker">Confiance &amp; chiffrement</div><h2>Sécurité — cliquez pour déplier</h2></div>
+  <div class="grid" id="secGrid"></div>
+
+  <div class="card" style="margin-top:18px">
+    <h2>🧪 Simulateur de scénarios de sécurité</h2>
+    <p class="muted">Que décide AWS IoT Core dans chaque cas ? Lancez un scénario et lisez la console.</p>
+    <button class="btn ok" onclick="securityScenario('ok')">✅ Connexion correcte</button>
+    <button class="btn bad" onclick="securityScenario('cert')">Sans certificat</button>
+    <button class="btn bad" onclick="securityScenario('policy')">Sans IoT Policy</button>
+    <button class="btn bad" onclick="securityScenario('key')">Clé privée volée</button>
+    <button class="btn ghost" onclick="document.getElementById('secLog').innerHTML='<span class=sys>[SECURITE] Console réinitialisée.</span>'">Effacer</button>
+    <div class="log" id="secLog" style="margin-top:12px"><span class="sys">[SECURITE] Choisissez un scénario…</span></div>
+  </div>
+</section>
+
+<!-- ============ GLOSSAIRE ============ -->
+<section class="section" id="gloss">
+  <div class="section-head"><div class="kicker">Tous les termes</div><h2>Glossaire interactif</h2></div>
+  <div class="card">
+    <p class="muted">Cliquez sur un terme : sa <b>définition</b>, sa <b>description</b> et son <b>explication détaillée</b> s'affichent.</p>
+    <div class="gloss-terms" id="glossTerms"></div>
+    <div id="glossBody"></div>
+  </div>
+</section>
+
+<!-- ============ LAB ============ -->
+<section class="section" id="lab">
+  <div class="section-head"><div class="kicker">Travaux pratiques</div><h2>Simulateur de TP — Capteur Python sécurisé</h2></div>
+  <div class="card">
+    <p class="muted" style="margin:0 0 14px">Simulateur interactif complet du laboratoire AWS IoT Core. Suivez les étapes dans le panneau de gauche : architecture, création du Thing, certificats X.509, code <code>capteur_simple.py</code>, test MQTT et dépannage.</p>
+    <iframe id="tpFrame" title="Simulateur TP AWS IoT Core" style="width:100%;height:880px;border:1px solid var(--line);border-radius:14px;background:#fff;display:block"></iframe>
+  </div>
+  <script type="text/template" id="tpSimSrc"><!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simulateur TP AWS IoT Core - Capteur Python sécurisé</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#1f2937;--muted:#6b7280;--accent:#2563eb;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--line:#d9e2ef;--dark:#0f172a}
+*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(135deg,#0f172a,#1d4ed8);color:white;padding:28px 28px 22px}
+header h1{margin:0;font-size:28px}header p{margin:8px 0 0;color:#e5e7eb;font-size:16px}.badge{display:inline-block;background:#e0f2fe;color:#075985;border-radius:20px;padding:5px 10px;font-weight:600;margin-right:6px;font-size:13px}.wrap{display:grid;grid-template-columns:330px 1fr;gap:18px;padding:18px}.side{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;position:sticky;top:10px;height:calc(100vh - 20px);overflow:auto}.main{min-width:0}.stepbtn{width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px;margin:6px 0;cursor:pointer;color:var(--ink);font-weight:600}.stepbtn small{display:block;color:var(--muted);font-weight:400;margin-top:3px}.stepbtn.active{border-color:var(--accent);background:#eff6ff;color:#1d4ed8}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 6px 20px rgba(15,23,42,.04)}h2{margin-top:0;color:#0f172a}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.box{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fbfdff}.ok{color:var(--ok);font-weight:700}.bad{color:var(--bad);font-weight:700}.warn{color:var(--warn);font-weight:700}code,pre{font-family:Consolas,Monaco,monospace}pre{background:#0b1220;color:#e5e7eb;border-radius:14px;padding:15px;overflow:auto;line-height:1.45;position:relative}.copy{float:right;border:0;background:#dbeafe;color:#1d4ed8;border-radius:8px;padding:6px 9px;cursor:pointer;font-weight:700}.input{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;margin:5px 0 10px}.btn{border:0;border-radius:10px;background:var(--accent);color:#fff;padding:10px 13px;font-weight:700;cursor:pointer}.btn.gray{background:#64748b}.btn.green{background:#16a34a}.btn.red{background:#dc2626}.sim{display:grid;grid-template-columns:1fr 120px 1fr;gap:12px;align-items:center;margin:16px 0}.node{background:#fff;border:2px solid var(--line);border-radius:16px;padding:16px;text-align:center;min-height:100px}.node h3{margin:0 0 8px}.arrow{text-align:center;font-size:30px;color:#2563eb}.terminal{height:260px;background:#020617;color:#bbf7d0;border-radius:14px;padding:12px;overflow:auto;font-family:Consolas,monospace;font-size:14px}.awsbox{height:260px;background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:12px;overflow:auto;font-family:Consolas,monospace;font-size:14px}.msg{background:#e0f2fe;border-left:4px solid #0284c7;padding:8px;margin:8px 0;border-radius:8px}.quiz label{display:block;margin:9px 0;padding:9px;border:1px solid var(--line);border-radius:10px;cursor:pointer}.result{font-weight:700;margin-top:10px}.footer{padding:20px;text-align:center;color:var(--muted)}table{border-collapse:collapse;width:100%;margin:10px 0}td,th{border:1px solid var(--line);padding:8px;text-align:left}th{background:#f1f5f9}.hidden{display:none}.check{display:flex;gap:8px;align-items:flex-start;margin:8px 0}.check input{margin-top:4px}@media(max-width:900px){.wrap{grid-template-columns:1fr}.side{position:relative;height:auto}.grid,.sim{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}}
+</style>
+</head>
+<body>
+<header>
+<h1>Simulateur interactif - TP AWS IoT Core + PowerShell + Python</h1>
+<p>Créer un capteur Python sécurisé, se connecter à AWS IoT Core et recevoir des commandes MQTT.</p>
+<p><span class="badge">Durée 1h30</span><span class="badge">Débutant</span><span class="badge">Windows + Python</span><span class="badge">Sécurité IoT</span></p>
+</header>
+<div class="wrap">
+<aside class="side">
+<h3>Navigation du TP</h3>
+<button class="stepbtn active" onclick="showStep(0)">0. Objectif <small>Architecture et résultat attendu</small></button>
+<button class="stepbtn" onclick="showStep(1)">1. Création AWS IoT Core <small>Se connecter → Connexion d'un appareil</small></button>
+<button class="stepbtn" onclick="showStep(2)">2. Kit de connexion <small>Fichiers et certificats</small></button>
+<button class="stepbtn" onclick="showStep(3)">3. Test officiel AWS <small>start.ps1</small></button>
+<button class="stepbtn" onclick="showStep(4)">4. Script capteur Python <small>capteur_simple.py</small></button>
+<button class="stepbtn" onclick="showStep(5)">5. Test LED_ON <small>AWS → PowerShell</small></button>
+<button class="stepbtn" onclick="showStep(6)">6. Simulateur MQTT <small>Publier / recevoir</small></button>
+<button class="stepbtn" onclick="showStep(7)">7. Dépannage <small>Erreurs fréquentes</small></button>
+<button class="stepbtn" onclick="showStep(8)">8. Quiz final <small>Validation étudiant</small></button>
+<hr>
+<div class="box">
+<b>Progression</b>
+<div id="progressText">0 / 9</div>
+<progress id="progress" value="1" max="9" style="width:100%"></progress>
+</div>
+</aside>
+<main class="main">
+<section class="card step">
+<h2>0. Objectif du TP</h2>
+<p>Dans ce laboratoire, l'étudiant crée un objet connecté dans <b>AWS IoT Core</b>, télécharge les certificats, teste la connexion avec PowerShell, puis crée un capteur Python personnalisé.</p>
+<div class="sim">
+<div class="node"><h3>Console AWS IoT Core</h3><p>Publie une commande</p><code>{"commande":"LED_ON"}</code></div>
+<div class="arrow">→</div>
+<div class="node"><h3>PowerShell + Python</h3><p>Reçoit la commande</p><code>ACTION : LED virtuelle ALLUMEE</code></div>
+</div>
+<div class="box"><b>Résultat attendu :</b><pre>Connexion AWS IoT Core reussie
+CAPTEUR PRET
+MESSAGE RECU DE AWS IOT CORE
+ACTION : LED virtuelle ALLUMEE</pre></div>
+</section>
+<section class="card step hidden">
+<h2>1. Création du capteur dans AWS IoT Core</h2>
+<ol>
+<li>Ouvrir AWS puis rechercher <b>IoT Core</b>.</li>
+<li>Cliquer sur <b>Se connecter</b>.</li>
+<li>Choisir <b>Connexion d'un appareil</b>.</li>
+<li>Créer un objet nommé :</li>
+</ol>
+<pre>Capteur_Temperature_01</pre>
+<h3>Choisir la plateforme</h3>
+<table><tr><th>Champ</th><th>Choix</th></tr><tr><td>Système d'exploitation</td><td><b>Windows</b></td></tr><tr><td>Langage</td><td><b>Python</b></td></tr></table>
+<p class="warn">Important : choisir Windows + Python pour ce premier TP, car les étudiants travaillent avec PowerShell sur Windows.</p>
+<h3>Pourquoi ?</h3>
+<pre>Windows 11
+   ↓
+PowerShell + Python
+   ↓ MQTT sécurisé TLS
+AWS IoT Core</pre>
+</section>
+<section class="card step hidden">
+<h2>2. Télécharger et comprendre le kit de connexion</h2>
+<p>AWS télécharge un fichier ZIP. Décompressez-le dans :</p>
+<pre>C:\Users\khiat\Downloads\connect_device_package (1)</pre>
+<p>Le dossier doit contenir :</p>
+<pre>aws-iot-device-sdk-python-v2
+Capteur_Temperature_01.cert.pem
+Capteur_Temperature_01.private.key
+Capteur_Temperature_01.public.key
+root-CA.crt
+start.ps1</pre>
+<table><tr><th>Fichier</th><th>Rôle</th></tr><tr><td>cert.pem</td><td>Carte d'identité numérique du capteur</td></tr><tr><td>private.key</td><td>Secret du capteur, ne jamais partager</td></tr><tr><td>public.key</td><td>Clé publique</td></tr><tr><td>root-CA.crt</td><td>Autorité racine AWS</td></tr><tr><td>start.ps1</td><td>Script officiel de test AWS</td></tr></table>
+</section>
+<section class="card step hidden">
+<h2>3. Tester la connexion officielle AWS</h2>
+<p>Ouvrir PowerShell et exécuter :</p>
+<pre><button class="copy" onclick="copyText(this)">Copier</button>cd "C:\Users\khiat\Downloads\connect_device_package (1)"
+ls
+.\start.ps1</pre>
+<p>Résultat attendu :</p>
+<pre>Lifecycle Connection Success
+Subscribing to topic 'sdk/test/python'
+Publishing message...
+Received message...</pre>
+<p class="ok">Si ce test marche, le certificat, la clé privée, TLS, MQTT et AWS IoT Core fonctionnent.</p>
+<p>Arrêter le test avec :</p><pre>CTRL + C</pre>
+</section>
+<section class="card step hidden">
+<h2>4. Créer le capteur Python personnalisé</h2>
+<p>Dans PowerShell :</p>
+<pre><button class="copy" onclick="copyText(this)">Copier</button>cd "C:\Users\khiat\Downloads\connect_device_package (1)"
+notepad capteur_simple.py</pre>
+<p>Collez le script complet suivant :</p>
+<pre id="scriptCode"><button class="copy" onclick="copyText(this)">Copier</button>from awsiot import mqtt5_client_builder
+from awscrt import mqtt5
+import threading
+import json
+import time
+
+# ============================================================
+# CONFIGURATION DU CAPTEUR
+# ============================================================
+
+# Remplacer cette valeur par votre endpoint AWS IoT Core personnel
+ENDPOINT = "a1hw9xl1er7m5h-ats.iot.us-east-1.amazonaws.com"
+
+CERTIFICATE = "Capteur_Temperature_01.cert.pem"
+PRIVATE_KEY = "Capteur_Temperature_01.private.key"
+
+# Pour le premier TP, on garde les paramètres officiels du kit AWS
+CLIENT_ID = "basicPubSub"
+TOPIC = "sdk/test/python"
+
+connected_event = threading.Event()
+led_state = "OFF"
+
+# ============================================================
+# FONCTION APPELEE QUAND UN MESSAGE EST RECU
+# ============================================================
+
+def on_message(data):
+    global led_state
+
+    packet = data.publish_packet
+    topic = packet.topic
+    message = packet.payload.decode("utf-8")
+
+    print("\n==============================")
+    print("MESSAGE RECU DE AWS IOT CORE")
+    print("Topic :", topic)
+    print("Message :", message)
+    print("==============================")
+
+    try:
+        contenu = json.loads(message)
+        commande = contenu.get("commande")
+
+        if commande == "LED_ON":
+            led_state = "ON"
+            print("ACTION : LED virtuelle ALLUMEE")
+
+        elif commande == "LED_OFF":
+            led_state = "OFF"
+            print("ACTION : LED virtuelle ETEINTE")
+
+        elif commande == "STATUS":
+            print("ACTION : Etat actuel =", led_state)
+
+        else:
+            print("COMMANDE NON RECONNUE")
+
+    except Exception:
+        print("Message recu mais ce n'est pas une commande JSON")
+
+# ============================================================
+# CONNEXION AWS IOT CORE
+# ============================================================
+
+def on_connect_success(data):
+    print("Connexion AWS IoT Core reussie")
+    connected_event.set()
+
+
+def on_connect_failure(data):
+    print("Erreur de connexion :", data.exception)
+
+
+print("Demarrage du capteur Python...")
+print("Connexion securisee avec certificat X.509...")
+
+client = mqtt5_client_builder.mtls_from_path(
+    endpoint=ENDPOINT,
+    cert_filepath=CERTIFICATE,
+    pri_key_filepath=PRIVATE_KEY,
+    client_id=CLIENT_ID,
+    on_publish_received=on_message,
+    on_lifecycle_connection_success=on_connect_success,
+    on_lifecycle_connection_failure=on_connect_failure
+)
+
+client.start()
+
+if not connected_event.wait(30):
+    raise TimeoutError("Connexion impossible")
+
+# ============================================================
+# ABONNEMENT AU TOPIC MQTT
+# ============================================================
+
+print("Abonnement au topic :", TOPIC)
+
+client.subscribe(mqtt5.SubscribePacket(
+    subscriptions=[
+        mqtt5.Subscription(
+            topic_filter=TOPIC,
+            qos=mqtt5.QoS.AT_LEAST_ONCE
+        )
+    ]
+))
+
+print("\nCAPTEUR PRET")
+print("Allez dans AWS IoT Core et publiez sur :", TOPIC)
+print("CTRL + C pour arreter\n")
+
+while True:
+    time.sleep(1)</pre>
+<p class="warn">Chaque étudiant doit remplacer <code>ENDPOINT</code> par son propre endpoint AWS IoT Core.</p>
+<p>Lancer le capteur :</p>
+<pre><button class="copy" onclick="copyText(this)">Copier</button>python capteur_simple.py</pre>
+</section>
+<section class="card step hidden">
+<h2>5. Test AWS → PowerShell</h2>
+<p>Dans AWS IoT Core :</p>
+<pre>Tester → Client de test MQTT → Publier dans une rubrique</pre>
+<p>Topic :</p><pre>sdk/test/python</pre>
+<p>Message :</p>
+<pre>{
+  "commande": "LED_ON"
+}</pre>
+<p>Résultat attendu dans PowerShell :</p>
+<pre>MESSAGE RECU DE AWS IOT CORE
+Topic : sdk/test/python
+Message : {
+  "commande": "LED_ON"
+}
+ACTION : LED virtuelle ALLUMEE</pre>
+<h3>Autres tests</h3>
+<pre>{ "commande": "LED_OFF" }</pre>
+<pre>{ "commande": "STATUS" }</pre>
+<pre>{ "commande": "HACK" }</pre>
+</section>
+<section class="card step hidden">
+<h2>6. Simulateur MQTT interactif</h2>
+<p>Ce simulateur aide les étudiants à comprendre l'échange avant ou pendant le vrai TP.</p>
+<div class="grid">
+<div class="box"><h3>AWS IoT Core - Publier</h3><label>Topic</label><input id="simTopic" class="input" value="sdk/test/python"><label>Message JSON</label><textarea id="simPayload" class="input" rows="6">{
+  "commande": "LED_ON"
+}</textarea><button class="btn" onclick="publishSim()">Publier depuis AWS</button> <button class="btn gray" onclick="clearSim()">Effacer</button></div>
+<div class="box"><h3>PowerShell - Capteur Python</h3><div id="terminal" class="terminal">Demarrage du capteur Python...
+Connexion AWS IoT Core reussie
+Abonnement au topic : sdk/test/python
+
+CAPTEUR PRET
+</div></div>
+</div>
+<div class="box"><b>Règle MQTT :</b> Python reçoit uniquement les messages publiés sur le topic auquel il est abonné : <code>sdk/test/python</code>.</div>
+</section>
+<section class="card step hidden">
+<h2>7. Dépannage</h2>
+<table><tr><th>Erreur</th><th>Cause</th><th>Solution</th></tr><tr><td>can't open file</td><td>Mauvais dossier</td><td><code>cd "C:\Users\khiat\Downloads\connect_device_package (1)"</code></td></tr><tr><td>FileNotFoundError certificate</td><td>Certificat introuvable</td><td>Vérifier <code>ls</code></td></tr><tr><td>AWS_IO_DNS_INVALID_NAME</td><td>Endpoint incorrect</td><td>Copier le vrai endpoint AWS IoT Core</td></tr><tr><td>CONNACK_CONNECTION_REFUSED</td><td>Client ID, policy ou topic non autorisé</td><td>Utiliser <code>basicPubSub</code> et <code>sdk/test/python</code></td></tr><tr><td>PowerShell ne reçoit rien</td><td>Topic différent</td><td>AWS doit publier sur <code>sdk/test/python</code></td></tr></table>
+<h3>Checklist finale</h3>
+<label class="check"><input type="checkbox"> J'ai choisi Windows + Python dans AWS.</label>
+<label class="check"><input type="checkbox"> J'ai téléchargé le kit de connexion.</label>
+<label class="check"><input type="checkbox"> Le fichier <code>start.ps1</code> fonctionne.</label>
+<label class="check"><input type="checkbox"> Le fichier <code>capteur_simple.py</code> est créé.</label>
+<label class="check"><input type="checkbox"> Le capteur affiche <code>CAPTEUR PRET</code>.</label>
+<label class="check"><input type="checkbox"> AWS publie sur <code>sdk/test/python</code>.</label>
+</section>
+<section class="card step hidden">
+<h2>8. Quiz final</h2>
+<div class="quiz">
+<p><b>1. Quel est le rôle d'AWS IoT Core ?</b></p>
+<label><input type="radio" name="q1" value="0"> Installer Python</label>
+<label><input type="radio" name="q1" value="1"> Broker MQTT sécurisé pour objets connectés</label>
+<label><input type="radio" name="q1" value="0"> Créer des machines virtuelles</label>
+<p><b>2. Que signifie Subscribe ?</b></p>
+<label><input type="radio" name="q2" value="1"> Écouter un topic</label>
+<label><input type="radio" name="q2" value="0"> Supprimer un certificat</label>
+<label><input type="radio" name="q2" value="0"> Installer le SDK</label>
+<p><b>3. Pourquoi utilise-t-on un certificat X.509 ?</b></p>
+<label><input type="radio" name="q3" value="1"> Authentifier l'objet connecté</label>
+<label><input type="radio" name="q3" value="0"> Augmenter la température</label>
+<label><input type="radio" name="q3" value="0"> Remplacer PowerShell</label>
+<button class="btn green" onclick="checkQuiz()">Corriger</button><div id="quizResult" class="result"></div>
+</div>
+</section>
+</main>
+</div>
+<div class="footer">Support pédagogique - TP AWS IoT Core, sécurité des systèmes embarqués</div>
+<script>
+let current=0;const steps=[...document.querySelectorAll('.step')];const btns=[...document.querySelectorAll('.stepbtn')];function showStep(i){steps[current].classList.add('hidden');btns[current].classList.remove('active');current=i;steps[current].classList.remove('hidden');btns[current].classList.add('active');document.getElementById('progress').value=i+1;document.getElementById('progressText').textContent=(i+1)+' / '+steps.length;window.scrollTo({top:0,behavior:'smooth'});}function copyText(btn){const pre=btn.parentElement;let txt=pre.innerText.replace('Copier','').trim();navigator.clipboard.writeText(txt);btn.textContent='Copié';setTimeout(()=>btn.textContent='Copier',1200);}function publishSim(){const topic=document.getElementById('simTopic').value.trim();const payload=document.getElementById('simPayload').value.trim();const term=document.getElementById('terminal');let out='\n==============================\nMESSAGE RECU DE AWS IOT CORE\nTopic : '+topic+'\nMessage : '+payload+'\n==============================\n';if(topic!=='sdk/test/python'){out+='AUCUNE ACTION : le capteur n ecoute pas ce topic.\n';term.textContent+=out;term.scrollTop=term.scrollHeight;return;}try{const data=JSON.parse(payload);if(data.commande==='LED_ON')out+='ACTION : LED virtuelle ALLUMEE\n';else if(data.commande==='LED_OFF')out+='ACTION : LED virtuelle ETEINTE\n';else if(data.commande==='STATUS')out+='ACTION : Etat actuel affiche\n';else out+='COMMANDE NON RECONNUE\n';}catch(e){out+='Message recu mais ce n est pas une commande JSON\n';}term.textContent+=out;term.scrollTop=term.scrollHeight;}function clearSim(){document.getElementById('terminal').textContent='Demarrage du capteur Python...\nConnexion AWS IoT Core reussie\nAbonnement au topic : sdk/test/python\n\nCAPTEUR PRET\n';}function checkQuiz(){let score=0;['q1','q2','q3'].forEach(q=>{const v=document.querySelector('input[name="'+q+'"]:checked');if(v&&v.value==='1')score++;});const r=document.getElementById('quizResult');r.textContent='Score : '+score+'/3 '+(score===3?'Bravo, TP validé.':'Relire les notions MQTT et sécurité.');r.style.color=score===3?'#16a34a':'#d97706';}
+<\/script>
+</body>
+</html>
+</script>
+</section>
+
+<!-- ============ SYNTHÈSE ============ -->
+<section class="section" id="synthese">
+  <div class="section-head"><div class="kicker">Pour conclure</div><h2>Synthèse finale</h2></div>
+  <div class="card">
+    <div class="diagram flow">
+      <div class="node device">1 · Objet connecté</div><div class="arrow">→</div>
+      <div class="node sec">2 · TLS + X.509</div><div class="arrow">→</div>
+      <div class="node cloud">3 · AWS IoT Core</div><div class="arrow">→</div>
+      <div class="node ok">4 · MQTT Pub/Sub</div>
+    </div>
+    <p style="margin-top:16px"><b>Conclusion :</b> un objet connecté professionnel ne se contente pas d'envoyer des données.
+    Il doit être <b>identifié</b> (Thing), <b>authentifié</b> (certificat X.509), <b>chiffré</b> (TLS),
+    <b>autorisé</b> (IoT Policy) et <b>supervisé</b>. C'est la chaîne complète de confiance de l'IoT moderne.</p>
+    <div class="grid" style="margin-top:14px">
+      <div class="card" style="box-shadow:none;border-color:var(--teal)"><h3>Identité</h3><p class="muted">Thing + certificat = carte d'identité de l'objet.</p></div>
+      <div class="card" style="box-shadow:none;border-color:var(--amber)"><h3>Sécurité</h3><p class="muted">TLS chiffre, X.509 authentifie, Policy autorise.</p></div>
+      <div class="card" style="box-shadow:none;border-color:var(--navy)"><h3>Communication</h3><p class="muted">MQTT publie et reçoit via des topics.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VALIDATION / ATTESTATION ============ -->
+<section class="section" id="validation">
+  <div class="section-head no-print"><div class="kicker">Évaluation finale</div><h2>Validation de la formation</h2></div>
+  <div id="valArea"></div>
+</section>
+
+</div>
+
+<div class="footer">
+  <b>Prof. Azeddine Khiat</b> — Simulateur pédagogique AWS IoT Core · MQTT · TLS · X.509 · Python<br>
+  <span class="muted">Plateforme interactive autonome — aucune connexion requise.</span>
+</div>
+
+<script>
+/* ============================================================
+   DONNÉES PÉDAGOGIQUES (définition / description / explication)
+   ============================================================ */
+
+// --- Concepts IoT ---
+const concepts=[
+ {icon:"⚙️",titre:"Système embarqué",
+  def:"Ordinateur spécialisé intégré dans un équipement, conçu pour une tâche précise.",
+  desc:"On le trouve dans une voiture, une machine à laver, une caméra IP ou une carte ESP32. Il fonctionne souvent sans clavier ni écran.",
+  exp:"Contrairement à un PC généraliste, il dispose de ressources limitées (mémoire, CPU) et exécute un logiciel dédié. La connexion Internet n'est PAS obligatoire : une machine à laver classique est un système embarqué… mais pas un objet connecté."},
+ {icon:"🌐",titre:"Objet connecté (IoT)",
+  def:"Un système embarqué doté d'une connexion réseau qui échange des données avec le Cloud ou d'autres appareils.",
+  desc:"Exemple typique : un capteur de température qui envoie ses mesures vers AWS et peut recevoir des commandes en retour.",
+  exp:"« IoT » signifie Internet of Things. La connexion change tout : l'objet peut être supervisé à distance, mis à jour, et il doit donc être sécurisé (sinon n'importe qui pourrait s'y connecter). C'est ce besoin de sécurité qui justifie certificats, TLS et policies."},
+ {icon:"🆔",titre:"Thing AWS",
+  def:"L'identité numérique officielle d'un objet dans AWS IoT Core.",
+  desc:"Chaque appareil réel (un Raspberry Pi, un ESP32) correspond à un « Thing » côté Cloud, avec un nom unique, par ex. Capteur_Temperature_01.",
+  exp:"Le Thing est l'équivalent d'une fiche d'état civil de l'objet. On lui rattache un certificat X.509 et une IoT Policy. Sans Thing, AWS ne sait pas « qui » se connecte ni quels droits accorder."}
+];
+
+// --- Sécurité ---
+const securite=[
+ {icon:"📄",titre:"Certificat X.509",cls:"sec",
+  def:"Carte d'identité numérique de l'objet, signée et vérifiable.",
+  desc:"Il prouve « je suis bien Capteur_Temperature_01 » lors de la connexion à AWS IoT Core.",
+  exp:"Le certificat contient une clé publique et des informations d'identité. AWS le vérifie pour authentifier l'objet. Il va toujours par paire avec une clé privée : le certificat est public, la clé privée reste secrète."},
+ {icon:"🔑",titre:"Clé privée",cls:"danger",
+  def:"Le secret unique de l'appareil, jamais partagé.",
+  desc:"Elle prouve mathématiquement que l'objet possède bien le certificat qu'il présente.",
+  exp:"Si la clé privée est volée, un pirate peut usurper l'identité de l'objet. C'est le fichier le plus sensible : il ne doit jamais être envoyé sur le réseau, ni mis dans un dépôt Git, ni partagé. En cas de fuite : révoquer le certificat et régénérer une nouvelle paire."},
+ {icon:"🏛️",titre:"Root CA",cls:"ok",
+  def:"L'autorité de certification racine en qui on a confiance.",
+  desc:"Elle permet au client (l'objet) de vérifier qu'il parle bien au vrai AWS IoT Core et non à un imposteur.",
+  exp:"C'est l'authentification dans l'autre sens : l'objet vérifie le serveur. Le Root CA d'Amazon est embarqué dans le code Python. Sans lui, un attaquant pourrait se faire passer pour AWS (attaque de l'homme du milieu)."},
+ {icon:"🔒",titre:"TLS",cls:"cloud",
+  def:"Protocole qui chiffre la communication entre l'objet et le Cloud.",
+  desc:"Il protège les données contre l'espionnage et la modification pendant le transport.",
+  exp:"TLS (successeur de SSL) assure trois choses : confidentialité (chiffrement), intégrité (les données ne sont pas modifiées) et authentification (via les certificats X.509). Dans l'IoT, MQTT circule à l'intérieur d'un tunnel TLS sur le port 8883."}
+];
+
+// --- Rôle AWS IoT Core ---
+const roles=[
+ {icon:"📥",titre:"Recevoir",
+  def:"Collecter les données envoyées par les objets.",
+  desc:"Les capteurs publient température, humidité, état… sur des topics MQTT.",
+  exp:"AWS IoT Core agit comme un broker : il accepte des milliers de connexions simultanées et reçoit les messages publiés, sans que les objets aient à se connaître entre eux."},
+ {icon:"📤",titre:"Commander",
+  def:"Envoyer des ordres vers les objets.",
+  desc:"Allumer une LED, fermer une porte, changer un seuil d'alerte.",
+  exp:"La communication est bidirectionnelle : l'objet s'abonne à un topic de commande et exécute l'action reçue. C'est ainsi qu'on pilote un appareil à distance."},
+ {icon:"🛡️",titre:"Sécuriser",
+  def:"Garantir que seuls les objets autorisés communiquent.",
+  desc:"Via les certificats X.509, le chiffrement TLS et les IoT Policies.",
+  exp:"Chaque connexion est authentifiée (certificat), chiffrée (TLS) et autorisée (policy). Une connexion sans certificat valide est refusée immédiatement."},
+ {icon:"🔀",titre:"Router",
+  def:"Diriger les messages vers les autres services AWS.",
+  desc:"Vers Lambda (traitement), S3 (stockage), DynamoDB (base de données).",
+  exp:"La « Rules Engine » d'AWS IoT Core déclenche des actions selon le contenu des messages : par ex. stocker chaque mesure dans DynamoDB ou alerter si la température dépasse un seuil."}
+];
+
+// --- Glossaire ---
+const glossaire={
+ "Thing":{def:"Identité numérique d'un objet dans AWS IoT Core.",
+   desc:"Représente un appareil physique unique côté Cloud.",
+   exp:"On y rattache le certificat et la policy. C'est le point d'entrée de tout objet dans AWS IoT."},
+ "MQTT":{def:"Protocole de messagerie léger, idéal pour l'IoT.",
+   desc:"Fonctionne en mode Publish/Subscribe via des topics.",
+   exp:"Conçu pour les réseaux à faible bande passante et les appareils contraints. Plus léger que HTTP : peu d'octets d'en-tête, idéal pour des capteurs."},
+ "Topic":{def:"Canal hiérarchique sur lequel circulent les messages MQTT.",
+   desc:"Ex. capteurs/salon/temperature, séparé par des /.",
+   exp:"Le Subscriber ne reçoit que les messages des topics auxquels il est abonné. Les jokers # et + permettent de s'abonner à plusieurs topics."},
+ "Broker":{def:"Serveur central qui distribue les messages MQTT.",
+   desc:"Ici, c'est AWS IoT Core lui-même.",
+   exp:"Le broker reçoit les publications et les transmet à tous les abonnés du topic concerné. Les objets ne se parlent jamais directement."},
+ "TLS":{def:"Protocole de chiffrement des communications.",
+   desc:"Protège contre l'espionnage et la falsification.",
+   exp:"MQTT pour l'IoT s'utilise au-dessus de TLS (port 8883), avec authentification mutuelle par certificats."},
+ "X.509":{def:"Standard de certificat numérique.",
+   desc:"Sert de carte d'identité à l'objet.",
+   exp:"Contient une clé publique et des métadonnées d'identité. AWS l'utilise pour authentifier chaque appareil."},
+ "Clé privée":{def:"Secret cryptographique propre à l'appareil.",
+   desc:"Ne doit jamais quitter l'appareil ni être partagée.",
+   exp:"Si elle fuite, l'identité de l'objet peut être usurpée. Stockage local sécurisé obligatoire."},
+ "IoT Policy":{def:"Document définissant les droits d'un certificat.",
+   desc:"Autorise Connect, Publish, Subscribe sur certains topics.",
+   exp:"Même avec un certificat valide, sans policy adaptée l'objet ne peut rien faire. C'est le principe du moindre privilège."},
+ "Publish":{def:"Action d'envoyer un message sur un topic.",
+   desc:"Réalisée par l'objet émetteur (le capteur).",
+   exp:"client.publish('capteurs/salon/temperature', payload) en Python avec la bibliothèque AWS IoT SDK."},
+ "Subscribe":{def:"Action de s'abonner à un topic pour recevoir ses messages.",
+   desc:"Réalisée par le récepteur (dashboard, autre objet).",
+   exp:"Seuls les abonnés d'un topic reçoivent ce qui y est publié, en quasi temps réel."},
+ "Payload":{def:"Le contenu utile d'un message MQTT.",
+   desc:"Souvent du JSON : {\"temperature\":25.6}.",
+   exp:"Le format JSON est lisible et facile à traiter côté Cloud par Lambda ou une base de données."},
+ "Python":{def:"Langage utilisé pour programmer l'objet dans ce lab.",
+   desc:"Via le script capteur_simple.py et l'AWS IoT Device SDK.",
+   exp:"Python gère la connexion TLS, le chargement des certificats, puis le publish/subscribe MQTT en quelques lignes."}
+};
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+const sections=[
+ ['intro','Intro'],['concepts','Concepts'],['aws','AWS IoT Core'],
+ ['mqtt','MQTT'],['securite','Sécurité'],['gloss','Glossaire'],
+ ['lab','Lab'],['synthese','Synthèse'],['validation','Validation ✓']
+];
+const nav=document.getElementById('nav');
+sections.forEach((s,i)=>{
+  const b=document.createElement('button');
+  b.innerHTML='<span class="n">'+String(i+1).padStart(2,'0')+'</span>'+s[1];
+  b.onclick=()=>show(s[0],b);
+  if(i===0)b.classList.add('active');
+  nav.appendChild(b);
+});
+function show(id,btn){
+  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ============================================================
+   CARTES-CONCEPT INTERACTIVES (3 niveaux)
+   ============================================================ */
+
+// --- Exemples concrets (un par concept / terme) pour faciliter la comprehension ---
+const examples={
+ "Système embarqué":"La carte electronique d'une machine a laver qui gere les programmes : elle calcule, mais ne se connecte a rien.",
+ "Objet connecté (IoT)":"Un thermostat connecte qui envoie la temperature de la maison au Cloud et recoit l'ordre \"chauffer a 21C\".",
+ "Thing AWS":"Dans la console AWS, vous creez un Thing nomme Capteur_Temperature_01 qui represente votre Raspberry Pi reel.",
+ "Certificat X.509":"device.pem.crt : le fichier que l'objet presente a AWS pour prouver \"je suis Capteur_Temperature_01\".",
+ "Clé privée":"private.pem.key : reste sur le Raspberry Pi, jamais envoyee sur Internet ni mise sur GitHub.",
+ "Root CA":"AmazonRootCA1.pem : embarque dans le code Python pour verifier que le serveur est bien AWS.",
+ "Recevoir":"AWS recoit {\"temperature\":25.6} publie par 1000 capteurs en meme temps, sans qu'ils se connaissent.",
+ "Commander":"Le dashboard publie {\"commande\":\"LED_ON\"} et la LED du Raspberry Pi s'allume.",
+ "Sécuriser":"Un objet sans certificat tente de se connecter -> AWS refuse immediatement la connexion.",
+ "Router":"Une regle dit : \"chaque mesure recue, range-la dans DynamoDB\" - automatiquement, sans code serveur.",
+ "Thing":"Capteur_Temperature_01 dans la console AWS IoT Core, lie a un certificat et a une policy.",
+ "MQTT":"client.publish('capteurs/salon/temperature', payload) envoie une mesure en quelques octets.",
+ "Topic":"capteurs/salon/temperature : un capteur publie dessus, le dashboard du salon s'y abonne.",
+ "Broker":"AWS IoT Core recoit le message du capteur et le redistribue a tous les abonnes du topic.",
+ "TLS":"Connexion sur le port 8883 : un espion sur le reseau ne voit que des donnees chiffrees illisibles.",
+ "X.509":"Le fichier device.pem.crt telecharge depuis AWS lors de la creation du certificat.",
+ "Clé privée_x":"private.pem.key, a garder secret sur l'appareil.",
+ "IoT Policy":"Une policy autorise iot:Publish uniquement sur capteurs/* : impossible de publier ailleurs.",
+ "Publish":"Le capteur envoie sa temperature : client.publish('capteurs/salon/temperature', '{\"t\":25.6}').",
+ "Subscribe":"Le dashboard ecoute : client.subscribe('capteurs/salon/temperature') pour afficher la mesure.",
+ "Payload":"{\"temperature\":25.6,\"unite\":\"C\",\"etat\":\"OK\"} : le contenu JSON transporte.",
+ "Python":"capteur_simple.py charge les 3 fichiers (cert, cle, CA), se connecte puis publie/ecoute."
+};
+
+function buildConceptCard(c){
+  return `<div class="card concept" onclick="this.classList.toggle('open')">
+    <span class="tap-hint">cliquez ↓</span>
+    <div class="big-icon">${c.icon}</div>
+    <h3>${c.titre} <span class="chevron">›</span></h3>
+    <p class="muted">${c.def}</p>
+    <div class="layers">
+      <div class="layer def"><span class="tag">Définition</span><p>${c.def}</p></div>
+      <div class="layer desc"><span class="tag">Description</span><p>${c.desc}</p></div>
+      <div class="layer exp"><span class="tag">Explication</span><p>${c.exp}</p></div>
+      ${examples[c.titre]?('<div class=\"layer exm\"><span class=\"tag\">Exemple</span><p>'+examples[c.titre]+'</p></div>'):''}
+    </div>
+  </div>`;
+}
+document.getElementById('conceptGrid').innerHTML=concepts.map(buildConceptCard).join('');
+document.getElementById('secGrid').innerHTML=securite.map(buildConceptCard).join('');
+document.getElementById('roleGrid').innerHTML=roles.map(buildConceptCard).join('');
+
+// --- Cartes "Vocabulaire clé" (mêmes cartes 3 niveaux, à partir du glossaire) ---
+const termIcons={
+ "Thing":"🆔","MQTT":"📡","Topic":"🗂️","Broker":"🛰️","TLS":"🔒","X.509":"📄",
+ "Clé privée":"🔑","IoT Policy":"📜","Publish":"📤","Subscribe":"📥","Payload":"📦","Python":"🐍"
+};
+const termes=Object.keys(glossaire).map(k=>({
+  icon:termIcons[k]||"🔹",titre:k,
+  def:glossaire[k].def,desc:glossaire[k].desc,exp:glossaire[k].exp
+}));
+document.getElementById('termGrid').innerHTML=termes.map(buildConceptCard).join('');
+
+/* ============================================================
+   ARCHITECTURE : nœuds cliquables + animation paquet
+   ============================================================ */
+const nodeInfo={
+ pi:{t:"🍓 Raspberry Pi — l'objet connecté",
+   d:"C'est l'appareil physique qui exécute votre script capteur_simple.py.",
+   x:"Il lit (ou simule) une mesure, la met en forme en JSON, puis la publie via MQTT. Il détient la clé privée et le certificat X.509."},
+ tls:{t:"🔐 TLS + X.509 — la couche de confiance",
+   d:"Avant tout échange, un tunnel chiffré est établi et l'identité de l'objet est vérifiée.",
+   x:"Le certificat authentifie l'objet, le Root CA authentifie AWS, et TLS chiffre tout le trafic. Sans cette étape, la connexion est refusée."},
+ core:{t:"☁️ AWS IoT Core — le broker MQTT",
+   d:"Le serveur central qui reçoit, autorise et distribue les messages.",
+   x:"Il vérifie la policy attachée au certificat, accepte les publications et les transmet aux abonnés. Il peut router vers Lambda, S3 ou DynamoDB."},
+ dash:{t:"📱 Dashboard — le Subscriber",
+   d:"L'application qui s'abonne aux topics pour afficher ou traiter les données.",
+   x:"Elle reçoit en temps quasi réel ce qui est publié sur les topics auxquels elle est abonnée, et peut renvoyer des commandes."}
+};
+function explainNode(key,el){
+  document.querySelectorAll('#intro .node').forEach(n=>n.classList.remove('sel'));
+  el.classList.add('sel');
+  const i=nodeInfo[key];
+  document.getElementById('archPanel').innerHTML=
+    `<p class="pt">${i.t}</p><p><b>Rôle :</b> ${i.d}</p><p class="muted">${i.x}</p>`;
+}
+function animatePacket(){
+  const p=document.getElementById('pkt');
+  p.classList.remove('run');void p.offsetWidth;p.classList.add('run');
+}
+
+/* ============================================================
+   SIMULATEUR MQTT
+   ============================================================ */
+function logLine(el,txt,cls){
+  const d=document.getElementById(el);
+  d.innerHTML+='<br><span class="'+(cls||'')+'">'+txt+'</span>';
+  d.scrollTop=d.scrollHeight;
+}
+function topicMatch(pub,sub){
+  if(pub===sub)return true;
+  // gestion simple des jokers MQTT # et +
+  const ps=pub.split('/'),ss=sub.split('/');
+  for(let i=0;i<ss.length;i++){
+    if(ss[i]==='#')return true;
+    if(ss[i]==='+'){continue;}
+    if(ss[i]!==ps[i])return false;
+  }
+  return ps.length===ss.length;
+}
+function publishMsg(){
+  const pub=document.getElementById('pubTopic').value.trim();
+  const sub=document.getElementById('subTopic').value.trim();
+  const payload=document.getElementById('payload').value;
+  const p=document.getElementById('pktMqtt');
+  p.classList.remove('run');void p.offsetWidth;p.classList.add('run');
+  logLine('mqttLog','[Publisher] Publish → topic « '+pub+' »','sys');
+  logLine('mqttLog','[Broker] Message reçu : '+payload,'');
+  if(topicMatch(pub,sub)){
+    logLine('mqttLog','[Subscriber] Topic compatible. Message reçu ✅','ok');
+  }else{
+    logLine('mqttLog','[Subscriber] Topic « '+sub+' » ≠ « '+pub+' » → aucun message reçu ❌','err');
+  }
+}
+function wrongTopic(){
+  document.getElementById('subTopic').value='capteurs/salon/temperatur';
+  logLine('mqttLog','[Test] On introduit volontairement une faute dans le topic du Subscriber…','warn');
+  publishMsg();
+}
+
+/* ============================================================
+   SIMULATEUR SÉCURITÉ
+   ============================================================ */
+function securityScenario(s){
+  const el='secLog';document.getElementById(el).innerHTML='';
+  if(s==='ok'){
+    logLine(el,'[TLS] Tunnel chiffré établi ✅','ok');
+    logLine(el,'[X.509] Certificat présenté et valide ✅','ok');
+    logLine(el,'[Policy] Connect / Publish / Subscribe autorisés ✅','ok');
+    logLine(el,'[AWS IoT Core] Connexion acceptée — l\'objet peut communiquer.','ok');
+  }else if(s==='cert'){
+    logLine(el,'[TLS] Tentative de connexion…','sys');
+    logLine(el,'[X.509] Aucun certificat présenté ❌','err');
+    logLine(el,'[AWS IoT Core] Identité inconnue → connexion REFUSÉE.','err');
+  }else if(s==='policy'){
+    logLine(el,'[X.509] Certificat valide ✅','ok');
+    logLine(el,'[Policy] Aucune autorisation attachée ❌','err');
+    logLine(el,'[AWS IoT Core] Connexion acceptée mais Publish / Subscribe REFUSÉS.','warn');
+  }else if(s==='key'){
+    logLine(el,'[ALERTE] Clé privée compromise ❌','err');
+    logLine(el,'[Risque] Un pirate peut usurper l\'identité de l\'objet.','err');
+    logLine(el,'[Action] Révoquer le certificat puis générer une nouvelle paire de clés.','warn');
+  }
+}
+
+/* ============================================================
+   GLOSSAIRE INTERACTIF
+   ============================================================ */
+const gt=document.getElementById('glossTerms');
+Object.keys(glossaire).forEach((k,i)=>{
+  const b=document.createElement('button');
+  b.textContent=k;b.onclick=()=>showGloss(k,b);
+  if(i===0)b.classList.add('active');
+  gt.appendChild(b);
+});
+function showGloss(k,btn){
+  document.querySelectorAll('#glossTerms button').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active');
+  const g=glossaire[k];
+  document.getElementById('glossBody').innerHTML=
+    `<p class="gt">${k}</p>
+     <div class="layer def"><span class="tag">Définition</span><p>${g.def}</p></div>
+     <div class="layer desc"><span class="tag">Description</span><p>${g.desc}</p></div>
+     <div class="layer exp"><span class="tag">Explication</span><p>${g.exp}</p></div>${examples[k]?('<div class=\"layer exm\"><span class=\"tag\">Exemple</span><p>'+examples[k]+'</p></div>'):''}`;
+}
+showGloss('Thing',gt.firstChild);
+
+
+/* ============================================================
+   BANQUE DE QUESTIONS (utilisée par la Validation)
+   ============================================================ */
+const qs=[
+ {cat:"Concepts",q:"Quelle est la différence entre un système embarqué et un objet connecté ?",
+  a:["L'objet connecté possède une connexion réseau, pas forcément le système embarqué","Ils sont identiques","Le système embarqué est toujours plus puissant"],c:0,
+  fb:"Une machine à laver classique est un système embarqué ; un capteur qui envoie ses données au Cloud est un objet connecté."},
+ {cat:"Concepts",q:"Qu'est-ce qu'un Thing dans AWS IoT Core ?",
+  a:["Un capteur physique uniquement","L'identité numérique de l'objet dans le Cloud","Un serveur web"],c:1,
+  fb:"Le Thing est la fiche d'identité de l'objet côté AWS, à laquelle on rattache certificat et policy."},
+ {cat:"Concepts",q:"Lequel de ces appareils est un exemple typique d'objet connecté ?",
+  a:["Une calculatrice","Un thermostat qui envoie la température au Cloud","Une montre mécanique"],c:1,
+  fb:"L'objet connecté échange des données avec le Cloud et peut recevoir des commandes en retour."},
+ {cat:"AWS IoT Core",q:"Parmi ces missions, laquelle n'est PAS un rôle d'AWS IoT Core ?",
+  a:["Recevoir les données des objets","Router vers Lambda / S3 / DynamoDB","Fabriquer physiquement le capteur"],c:2,
+  fb:"AWS IoT Core reçoit, commande, sécurise et route les messages ; il ne fabrique pas le matériel."},
+ {cat:"AWS IoT Core",q:"Quel composant joue le rôle de broker MQTT dans le laboratoire ?",
+  a:["Le Raspberry Pi","AWS IoT Core","Le certificat X.509"],c:1,
+  fb:"Le broker reçoit les publications et les redistribue aux abonnés : ici, c'est AWS IoT Core."},
+ {cat:"MQTT",q:"Quel protocole est léger et adapté à l'IoT ?",
+  a:["FTP","MQTT","SMTP"],c:1,
+  fb:"MQTT, en mode Publish/Subscribe, est conçu pour les appareils contraints et les réseaux à faible débit."},
+ {cat:"MQTT",q:"Que se passe-t-il si Publisher et Subscriber utilisent deux topics différents ?",
+  a:["Le message arrive quand même","Aucun message n'est reçu","AWS supprime le Thing"],c:1,
+  fb:"Le broker ne livre un message qu'aux abonnés du même topic (ou d'un topic compatible avec # / +)."},
+ {cat:"MQTT",q:"Quel format est généralement utilisé pour le payload d'un message ?",
+  a:["JSON, ex. {\"temperature\":25.6}","Un fichier ZIP","Une image PNG"],c:0,
+  fb:"Le JSON est lisible et facile à traiter côté Cloud par Lambda ou une base de données."},
+ {cat:"MQTT",q:"Le caractère générique # dans un abonnement MQTT permet de…",
+  a:["Chiffrer le topic","S'abonner à plusieurs sous-topics à la fois","Supprimer un topic"],c:1,
+  fb:"Les jokers # et + permettent à un abonné de couvrir plusieurs topics d'un coup."},
+ {cat:"Sécurité",q:"Pourquoi utilise-t-on TLS ?",
+  a:["Pour chiffrer et authentifier la communication","Pour augmenter la température","Pour créer un topic"],c:0,
+  fb:"TLS assure confidentialité, intégrité et authentification ; MQTT circule dedans sur le port 8883."},
+ {cat:"Sécurité",q:"Quel fichier ne doit JAMAIS être partagé ni mis sur GitHub ?",
+  a:["Le Root CA","La clé privée (private.pem.key)","Le nom du topic"],c:1,
+  fb:"La clé privée est le secret de l'appareil ; sa fuite permet l'usurpation d'identité."},
+ {cat:"Sécurité",q:"À quoi sert le certificat X.509 ?",
+  a:["À authentifier l'objet auprès d'AWS","À mesurer la température","À accélérer le réseau"],c:0,
+  fb:"Le certificat (device.pem.crt) prouve « je suis bien Capteur_Temperature_01 »."},
+ {cat:"Sécurité",q:"Un certificat est valide mais aucune IoT Policy n'est attachée. Que se passe-t-il ?",
+  a:["L'objet a tous les droits","Publish / Subscribe sont refusés","La clé privée est révoquée"],c:1,
+  fb:"Sans policy adaptée, même un certificat valide ne peut ni publier ni s'abonner (moindre privilège)."},
+ {cat:"Sécurité",q:"À quoi sert le Root CA (AmazonRootCA1.pem) côté objet ?",
+  a:["À vérifier qu'on parle bien au vrai AWS","À stocker les mesures","À créer le Thing"],c:0,
+  fb:"Le Root CA permet à l'objet d'authentifier le serveur et d'éviter une attaque de l'homme du milieu."},
+ {cat:"Python / Lab",q:"Quels fichiers le script capteur_simple.py doit-il charger pour se connecter ?",
+  a:["Uniquement le payload JSON","Le certificat, la clé privée et le Root CA","Seulement le nom du topic"],c:1,
+  fb:"Ces trois fichiers établissent la connexion TLS authentifiée avant tout publish/subscribe."}
+];
+
+
+/* ============================================================
+   VALIDATION DE LA FORMATION + ATTESTATION + VERROUILLAGE
+   ============================================================ */
+const VAL_KEY='khiat_val_attestation_v1';
+const SEUIL=60; // % minimal de reussite
+const formationTitre="Sécurité des systèmes embarqués — AWS IoT Core, MQTT, TLS &amp; X.509";
+const competences=[
+ "Comprendre l'architecture IoT de bout en bout (objet → TLS → AWS IoT Core → dashboard)",
+ "Créer et identifier un objet (Thing) dans AWS IoT Core",
+ "Générer et gérer des certificats X.509 et une clé privée",
+ "Établir et tester une connexion TLS sécurisée (port 8883)",
+ "Publier et recevoir des messages MQTT avec Python (capteur_simple.py)",
+ "Sécuriser un objet via une IoT Policy (Connect / Publish / Subscribe)"
+];
+
+/* CSS de l'attestation : injecte dans la page ET réutilisé pour le fichier téléchargé */
+const CERT_CSS=`
+.cert{position:relative;background:#fff;border:3px solid #1F3864;border-radius:14px;padding:36px 34px;max-width:860px;margin:18px auto;box-shadow:0 10px 30px rgba(31,56,100,.15)}
+.cert::before{content:"";position:absolute;inset:11px;border:1.5px solid #B8860B;border-radius:8px;pointer-events:none}
+.cert .cert-kicker{text-align:center;color:#0D7377;letter-spacing:3px;font-weight:800;font-size:13px;text-transform:uppercase}
+.cert .cert-title{text-align:center;font-size:27px;color:#1F3864;letter-spacing:4px;margin:6px 0 2px}
+.cert .cert-sub{text-align:center;color:#5b6b86;margin:0 0 6px}
+.cert .lead{text-align:center;margin:16px 0 4px;color:#1b2540}
+.cert .name{display:inline-block;font-size:30px;color:#0D7377;font-weight:800;padding:2px 24px 6px;border-bottom:2px solid #d8e0ee}
+.cert .cert-formation{text-align:center;font-weight:800;color:#1F3864;font-size:17px;margin:8px 0 4px}
+.cert .comp-title{font-weight:800;color:#1F3864;margin:20px 0 6px}
+.cert .comp{margin:0;padding-left:20px;color:#1b2540;line-height:1.75}
+.cert .cert-foot{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-top:22px;flex-wrap:wrap}
+.cert .seal{width:106px;height:106px;border-radius:50%;border:3px dashed #B8860B;color:#B8860B;display:grid;place-items:center;text-align:center;font-weight:800;font-size:12px;line-height:1.35;flex:0 0 auto;transform:rotate(-8deg)}
+.cert .sign{text-align:center;margin-top:24px}
+.cert .sign .line{border-top:1.6px solid #1b2540;width:240px;margin:0 auto 4px}
+.mention-ok{color:#1f7a4d;font-weight:800}
+.mention-no{color:#b3261e;font-weight:800}
+@media print{
+  body{background:#fff !important}
+  nav,header.top,.footer{display:none !important}
+  .section{display:none !important}
+  #validation{display:block !important}
+  .no-print{display:none !important}
+  .cert{box-shadow:none;margin:0 auto;border-color:#1F3864}
+}`;
+(function(){var s=document.createElement('style');s.textContent=CERT_CSS;document.head.appendChild(s);})();
+
+let vName='',vSurname='',vQ=0,vScore=0;
+
+function valInit(){
+  let saved=null;try{saved=JSON.parse(localStorage.getItem(VAL_KEY));}catch(e){}
+  if(saved&&saved.nom){renderLocked(saved,false);}else{renderForm();}
+}
+function renderForm(){
+  document.getElementById('valArea').innerHTML=
+   '<div class="card">'+
+   '<h2>Avant de commencer</h2>'+
+   '<p class="muted">Saisissez votre identité. À la fin du test, une <b>attestation personnalisée</b> listant les compétences parcourues sera générée et téléchargeable (PDF + fichier à conserver). Le test ne peut être passé qu\'une seule fois sur cet ordinateur.</p>'+
+   '<div class="valform" style="max-width:520px">'+
+   '<div style="margin-bottom:14px"><label class="lbl">Nom</label><input id="vNom" class="field" placeholder="Ex. EL ALAOUI"></div>'+
+   '<div style="margin-bottom:14px"><label class="lbl">Prénom</label><input id="vPrenom" class="field" placeholder="Ex. Yassine"></div>'+
+   '<button class="btn teal" onclick="valStart()">Commencer la validation →</button>'+
+   '</div><p id="valErr" style="color:#b3261e;font-weight:700;margin-top:8px"></p></div>';
+}
+function valStart(){
+  const n=document.getElementById('vNom').value.trim();
+  const p=document.getElementById('vPrenom').value.trim();
+  if(!n||!p){document.getElementById('valErr').textContent='⚠️ Veuillez saisir votre nom et votre prénom pour commencer.';return;}
+  vSurname=n;vName=p;vQ=0;vScore=0;valRenderQ();
+}
+function valRenderQ(){
+  const q=qs[vQ];const pct=Math.round(vQ/qs.length*100);
+  let html='<div class="card">'+
+   '<div class="progress"><div class="bar" style="width:'+pct+'%"></div></div>'+
+   '<p class="muted" style="margin:12px 0 2px">Question '+(vQ+1)+' / '+qs.length+' — <b>'+q.cat+'</b></p>'+
+   '<h3 style="color:#1F3864;margin:4px 0 12px;font-size:18px">'+q.q+'</h3>';
+  q.a.forEach((x,i)=>html+='<button class="quiz-option" onclick="valAnswer('+i+')">'+x+'</button>');
+  html+='</div>';
+  document.getElementById('valArea').innerHTML=html;
+}
+function valAnswer(i){
+  if(i===qs[vQ].c)vScore++;
+  vQ++;
+  if(vQ<qs.length)valRenderQ();else valFinish();
+}
+function valFinish(){
+  const total=qs.length,pct=Math.round(vScore/total*100),passed=pct>=SEUIL;
+  const rec={nom:vSurname,prenom:vName,score:vScore,total:total,pct:pct,passed:passed,
+             date:new Date().toLocaleDateString('fr-FR'),
+             heure:new Date().toLocaleTimeString('fr-FR')};
+  try{localStorage.setItem(VAL_KEY,JSON.stringify(rec));}catch(e){}
+  renderLocked(rec,true);
+}
+function renderLocked(rec,justDone){
+  const lockMsg=justDone?'':'<div class="card no-print" style="border-left:5px solid #B8860B"><b>🔒 Formation déjà validée sur cet ordinateur.</b> Voici votre attestation. Le test ne peut pas être repassé (verrouillage anti-répétition).</div>';
+  document.getElementById('valArea').innerHTML=lockMsg+resultBanner(rec)+certHTML(rec)+certActions();
+}
+function resultBanner(rec){
+  const m=rec.passed?'<span class="mention-ok">RÉUSSIE ✅</span>':'<span class="mention-no">NON VALIDÉE ❌</span>';
+  return '<div class="card no-print"><h2 style="margin-top:0">Résultat — '+rec.prenom+' '+rec.nom+'</h2>'+
+   '<p style="font-size:18px">Score : <b>'+rec.score+' / '+rec.total+'</b> ('+rec.pct+'%) — Mention : '+m+'</p>'+
+   '<p class="muted">Seuil de réussite : '+SEUIL+'%. Validé le '+rec.date+'.</p></div>';
+}
+function certHTML(rec){
+  const mention=rec.passed?'Réussite confirmée':'Attestation de participation';
+  const comp=competences.map(c=>'<li>'+c+'</li>').join('');
+  return '<div class="cert" id="certCard">'+
+   '<div class="cert-kicker">Prof. Azeddine KHIAT</div>'+
+   '<div class="cert-title">ATTESTATION DE FORMATION</div>'+
+   '<p class="cert-sub">Sécurité des systèmes embarqués</p>'+
+   '<p class="lead">Cette attestation certifie que</p>'+
+   '<div style="text-align:center"><span class="name">'+rec.prenom+' '+rec.nom+'</span></div>'+
+   '<p class="lead">a suivi et complété la formation :</p>'+
+   '<p class="cert-formation">'+formationTitre+'</p>'+
+   '<p class="comp-title">Compétences parcourues :</p>'+
+   '<ul class="comp">'+comp+'</ul>'+
+   '<div class="cert-foot">'+
+     '<div>'+
+       '<p style="margin:0"><b>Score obtenu :</b> '+rec.score+' / '+rec.total+' ('+rec.pct+'%)</p>'+
+       '<p style="margin:0"><b>Mention :</b> '+mention+'</p>'+
+       '<p style="margin:0"><b>Date :</b> '+rec.date+'</p>'+
+     '</div>'+
+     '<div class="seal">CERTIFIÉ<br>IoT • AWS<br>★ ★ ★</div>'+
+   '</div>'+
+   '<div class="sign"><div class="line"></div><b>Prof. Azeddine KHIAT</b><br>'+
+   '<span style="color:#5b6b86;font-size:13px">Enseignant — Sécurité &amp; Systèmes embarqués</span></div>'+
+   '</div>';
+}
+function certActions(){
+  return '<div class="card no-print" id="certActions" style="text-align:center">'+
+   '<button class="btn" onclick="window.print()">🖨️ Télécharger l\'attestation (PDF)</button>'+
+   '<button class="btn teal" onclick="downloadAttestation()">💾 Télécharger / conserver mon attestation (fichier)</button>'+
+   '<button class="btn ghost" onclick="valReset()">Réinitialiser (enseignant)</button>'+
+   '<p class="muted" style="font-size:13px;margin-top:8px">PDF : dans la fenêtre d\'impression, choisissez « Enregistrer au format PDF ». Le fichier conservé se rouvre hors ligne sur votre PC.</p>'+
+   '</div>';
+}
+function valReset(){
+  if(confirm('Réinitialiser la validation sur cet ordinateur ? Le test pourra être repassé.')){
+    try{localStorage.removeItem(VAL_KEY);}catch(e){}
+    renderForm();
+  }
+}
+function downloadAttestation(){
+  let rec=null;try{rec=JSON.parse(localStorage.getItem(VAL_KEY));}catch(e){}
+  if(!rec)return;
+  const doc='<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'+
+   '<title>Attestation '+rec.prenom+' '+rec.nom+'</title>'+
+   '<style>body{font-family:Calibri,"Segoe UI",Arial,sans-serif;background:#eef2f8;margin:0;padding:30px;color:#1b2540}'+
+   CERT_CSS+
+   '.dl-actions{text-align:center;margin-top:18px}'+
+   '.dl-actions button{background:#1F3864;color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer;font-size:15px}'+
+   '@media print{.dl-actions{display:none !important}}'+
+   '</style></head><body>'+
+   certHTML(rec)+
+   '<div class="dl-actions no-print"><button onclick="window.print()">🖨️ Enregistrer en PDF</button></div>'+
+   '<p style="text-align:center;color:#5b6b86;margin-top:14px">Document généré le '+rec.date+' à '+(rec.heure||'')+' — Prof. Azeddine KHIAT</p>'+
+   '</body></html>';
+  const blob=new Blob([doc],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='Attestation_'+rec.nom+'_'+rec.prenom+'.html';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1500);
+}
+valInit();
+
+/* Chargement du simulateur de TP dans l'iframe (onglet Lab) */
+(function(){var t=document.getElementById('tpSimSrc');var fr=document.getElementById('tpFrame');if(t&&fr){fr.srcdoc=t.textContent.replace(/<\\\/script>/g,'<\/script>');}})();
+</script>
+</body>
+</html>
